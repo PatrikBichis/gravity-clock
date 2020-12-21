@@ -28,6 +28,10 @@ let _hour = -1;
 let showStroke = false;
 let font;
 
+Number.prototype.mapRange = function (in_min, in_max, out_min, out_max) {
+  return (this - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
 function preload() {
   font = loadFont('fonts/InconsolataExtraExpanded-Bold.ttf');
   window.addEventListener('resize', reportWindowSize);
@@ -94,11 +98,16 @@ function draw() {
 
   // Draw orientation
   if(inOrientationMode){
-    fill(255);
-    textAlign(LEFT, BASELINE );
-    textSize(20);
-    text(_alpha+","+_beta+","+_gamma, 100, 50);
-    textAlign(CENTER, BASELINE );
+
+    // set gravity 
+    engine.world.gravity.x = _gamma.mapRange(90,-90,2,-2);
+    engine.world.gravity.y = _beta.mapRange(90,-90,2,-2);
+
+    // fill(255);
+    // textAlign(LEFT, BASELINE );
+    // textSize(20);
+    // text(Math.round(_alpha)+","+Math.round(_beta)+","+Math.round(_gamma) +"," + engine.world.gravity.y, 100, 50);
+    // textAlign(CENTER, BASELINE );
   }
 
   if(!blockDrawing){
@@ -148,23 +157,24 @@ function handleOrientation(e){
 }
 
 function activatePhoneMode(){
-  if ( window.DeviceOrientationEvent && typeof( DeviceMotionEvent.requestPermission ) === "function" ) {
-    // (optional) Do something before API request prompt.
-    DeviceMotionEvent.requestPermission()
-        .then( response => {
-        // (optional) Do something after API prompt dismissed.
-        if ( response == "granted" ) {
-          window.addEventListener( "deviceorientation", handleOrientation)
-        }
-    })
-        .catch( console.error )
-  } 
-  if (window.DeviceOrientationEvent) {
-    window.addEventListener( "deviceorientation", handleOrientation)
-  }else {
-      alert( "DeviceMotionEvent is not defined" );
+  if(!inOrientationMode){
+    if ( window.DeviceOrientationEvent && typeof( DeviceMotionEvent.requestPermission ) === "function" ) {
+      // (optional) Do something before API request prompt.
+      DeviceMotionEvent.requestPermission()
+          .then( response => {
+          // (optional) Do something after API prompt dismissed.
+          if ( response == "granted" ) {
+            window.addEventListener( "deviceorientation", handleOrientation)
+          }
+      })
+          .catch( console.error )
+    } 
+    if (window.DeviceOrientationEvent) {
+      window.addEventListener( "deviceorientation", handleOrientation)
+    }else {
+        alert( "DeviceMotionEvent is not defined" );
+    }
   }
-  
 }
 
 function addNumbers() {
@@ -232,10 +242,14 @@ function drawVertices(vertices) {
 
 function addNumber(_hour, _minute, seconds, type){
   let b = createBodyBasedOnType(type);
- 
+  
+  let value = seconds;
+  if(type == 2) value = _minute;
+  if(type == 3) value = _hour;
+  
   let a = {
     body: b,
-    value: seconds,
+    value: value,
     type: type,
     hour: _hour,
     minute: _minute,
