@@ -1,15 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <script src="https://momentjs.com/downloads/moment.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.1.9/p5.js"></script>
-      <script language="javascript" type="text/javascript" src="libs/matter.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.1.9/addons/p5.sound.min.js"></script>
-    <link rel="stylesheet" type="text/css" href="style.css">
+    <!-- v1.1.9 -->
+    <script language="javascript" src="libs/p5.min.js"></script>
+    <script language="javascript" src="libs/p5.sound.min.js"></script>
+
+    <script language="javascript" src="libs/moment.min.js"></script>
+    <script language="javascript" src="libs/matter.js"></script>
+    <script language="javascript" src="libs/bootstrap.bundle.min.js"></script>
+
+    <!-- v5.0.0-beta1 -->
+    <link rel="stylesheet" type="text/css" href="styles/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="styles/fontawesome.min.css">
+    <link rel="stylesheet" type="text/css" href="styles/all.min.css">
+    <link rel="stylesheet" type="text/css" href="styles/style.css">
+    
     <meta charset="utf-8" />
 
   </head>
   <body style="background-color: #ffffff; background-image: linear-gradient(315deg, #ffffff 0%, #d7e1ec 74%);">
+    <div style="position: absolute; right: 20px; top: 20px;">
+      <button id="btnPhone" onclick="activatePhoneMode();" class="btn btn-secondary"><i class="fas fa-mobile-alt"></i></button>
+      <button is="btnReload" onclick="reload()" class="btn btn-secondary"><i class="fas fa-eraser"></i></button>
+    </div>
     <script src="sketch.js"></script>
   </body>
 </html>

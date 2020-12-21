@@ -6,26 +6,26 @@ const Render = Matter.Render;
 const World = Matter.World;
 const Bodies = Matter.Bodies;
 const Body = Matter.Body;
-var once = false;
-
+var boxes = []; 
+var blockDrawing = false;
+var inOrientationMode = false;
+var _alpha = 0;
+var _beta = 0;
+var _gamma = 0;
 
 let engine;
-
 let height = 0;
 let width = 0;
-
 let ground;
 let leftWall;
 let rightWall;
 let roof;
 let angle = 0;
 let _frameCount = 0;
-var boxes = []; 
 let seconds = -1;
 let _minute = -1;
 let _hour = -1;
 let showStroke = false;
-
 let font;
 
 function preload() {
@@ -37,6 +37,7 @@ function reportWindowSize(e){
     height = window.innerHeight;
     width = window.innerWidth;
     resizeCanvas(width, height);
+    // TODO : Chanage size on static objects
 }
 
 function setup() {
@@ -77,23 +78,40 @@ function setup() {
 
   // set font and how text should align
   textFont(font)
-  textAlign(CENTER, CENTER);
+  //textAlign(CENTER, CENTER);
+  textAlign(CENTER, BASELINE );
+
+  // let btnReload = document.querySelector("#btnReload");
+  // console.dir(btnReload);
+  // btnReload = addEventListener("click", reload);
+  // let btnPhone = document.querySelector(".btnPhone");
 }
 
 function draw() {
+  
   // Set background to black
   background(0);
 
-  // Add or remove numbers based on time,
-  // should be moved to a timer
-  addNumbers();
-  removeNumbers();
-
-  // Draw all numbers
-  for (let i = 0; i < boxes.length; i++) {
-    drawRec(boxes[i]);
+  // Draw orientation
+  if(inOrientationMode){
+    fill(255);
+    textAlign(LEFT, BASELINE );
+    textSize(20);
+    text(_alpha+","+_beta+","+_gamma, 100, 50);
+    textAlign(CENTER, BASELINE );
   }
 
+  if(!blockDrawing){
+    // Add or remove numbers based on time,
+    // should be moved to a timer
+    addNumbers();
+    removeNumbers();
+
+    // Draw all numbers
+    for (let i = 0; i < boxes.length; i++) {
+      drawRec(boxes[i]);
+    }
+  }
   // Draw static objects with black 
   fill(0);
   drawVertices(ground.vertices);
@@ -106,6 +124,49 @@ function draw() {
   _frameCount++;
 }
 
+function reload(){
+  blockDrawing = true;
+  console.log(boxes.length);
+  for (let i = 0; i < boxes.length; i++) {
+    World.remove(engine.world, boxes[i].body);
+  }
+
+  boxes = [];
+
+  seconds = -1;
+  _minute = -1;
+  _hour = -1;
+  blockDrawing = false;
+}
+
+function handleOrientation(e){
+  inOrientationMode = true;
+  _alpha = e.alpha;
+  _beta = e.beta;
+  _gamma = e.gamma;
+  console.log('rotateZ(' + _alpha + 'deg) rotateX(' + _beta + 'deg) rotateY(' + _gamma + 'deg)')
+}
+
+function activatePhoneMode(){
+  if ( window.DeviceOrientationEvent && typeof( DeviceMotionEvent.requestPermission ) === "function" ) {
+    // (optional) Do something before API request prompt.
+    DeviceMotionEvent.requestPermission()
+        .then( response => {
+        // (optional) Do something after API prompt dismissed.
+        if ( response == "granted" ) {
+          window.addEventListener( "deviceorientation", handleOrientation)
+        }
+    })
+        .catch( console.error )
+  } 
+  if (window.DeviceOrientationEvent) {
+    window.addEventListener( "deviceorientation", handleOrientation)
+  }else {
+      alert( "DeviceMotionEvent is not defined" );
+  }
+  
+}
+
 function addNumbers() {
   if (_frameCount % 40 == 0) {
     let s = moment().format('ss');
@@ -113,15 +174,15 @@ function addNumbers() {
     let h = moment().format('HH');
     if (seconds !== s) {
       seconds = s;
-      addSeconds(h, m, s);
+      addNumber(h, m, s, 1);
     }
     if (_minute !== m) {
       _minute = m;
-      addMinute(h, m, s)
+      addNumber(h, m, s, 2)
     }
     if (_hour !== h) {
       _hour = h;
-      addHour(h, m, s)
+      addNumber(h, m, s, 3)
     }
     _frameCount = 0;
   }
@@ -136,7 +197,6 @@ function removeNumbers() {
     let h = moment().format('HH');
 
     var duration = moment.duration(now.diff(then));
-
 
     if (boxes[i].type == 1 && duration._data.minutes > 1) {
       World.remove(engine.world, boxes[i].body);
@@ -170,103 +230,150 @@ function drawVertices(vertices) {
   endShape(CLOSE);
 }
 
-function addSeconds(_hour, _minute, seconds) {
-  let b = Bodies.rectangle(width/2 - 40, 10, 80, 40, {
-    angle: angle
-  });
-  Body.setAngularVelocity(b, random(-0.45, 0.45));
-
-  World.add(engine.world, b);
+function addNumber(_hour, _minute, seconds, type){
+  let b = createBodyBasedOnType(type);
+ 
   let a = {
     body: b,
     value: seconds,
-    type: 1,
+    type: type,
     hour: _hour,
     minute: _minute,
     seconds: seconds
   }
   boxes.push(a);
+  World.add(engine.world, b);
 }
 
-function addMinute(_hour, _minute, seconds) {
-  let b = Bodies.rectangle(width/2 - 40, 10, 220, 100, {
+function createBodyBasedOnType(type){
+  let x = 80;
+  let y = 40;
+  let angel = 0.45;
+
+  if(type == 2){
+    x = 220;
+    y = 100;
+    angel = 0.1;
+  }
+  if(type == 3){
+    x = 340;
+    y = 160;
+    angel = 0.01;
+  }
+  
+  let b = Bodies.rectangle(width/2 - 40, 10, x, y, {
     angle: angle
   });
-  Body.setAngularVelocity(b, random(-0.10, 0.10));
+  Body.setAngularVelocity(b, random(-angel, angel));
 
-  World.add(engine.world, b);
-  let a = {
-    body: b,
-    value: _minute,
-    type: 2,
-    hour: _hour,
-    minute: _minute,
-    seconds: seconds
-  }
-  boxes.push(a);
+  return b;
 }
 
-function addHour(_hour, _minute, seconds) {
-  let b = Bodies.rectangle(width/2 - 40, 10, 340, 160, {
-    angle: angle
-  });
-  Body.setAngularVelocity(b, random(-0.01, 0.01));
+// function addSeconds(_hour, _minute, seconds) {
+//   let b = Bodies.rectangle(width/2 - 40, 10, 80, 40, {
+//     angle: angle
+//   });
+//   Body.setAngularVelocity(b, random(-0.45, 0.45));
 
-  World.add(engine.world, b);
-  let a = {
-    body: b,
-    value: _hour,
-    type: 3,
-    hour: _hour,
-    minute: _minute,
-    seconds: seconds
-  }
-  boxes.push(a);
-}
+ 
+//   let a = {
+//     body: b,
+//     value: seconds,
+//     type: 1,
+//     hour: _hour,
+//     minute: _minute,
+//     seconds: seconds
+//   }
+//   boxes.push(a);
+//   World.add(engine.world, b);
+// }
+
+// function addMinute(_hour, _minute, seconds) {
+//   let b = Bodies.rectangle(width/2 - 40, 10, 220, 100, {
+//     angle: angle
+//   });
+//   Body.setAngularVelocity(b, random(-0.10, 0.10));
+
+//   World.add(engine.world, b);
+//   let a = {
+//     body: b,
+//     value: _minute,
+//     type: 2,
+//     hour: _hour,
+//     minute: _minute,
+//     seconds: seconds
+//   }
+//   boxes.push(a);
+// }
+
+// function addHour(_hour, _minute, seconds) {
+//   let b = Bodies.rectangle(width/2 - 40, 10, 340, 160, {
+//     angle: angle
+//   });
+//   Body.setAngularVelocity(b, random(-0.01, 0.01));
+
+//   World.add(engine.world, b);
+//   let a = {
+//     body: b,
+//     value: _hour,
+//     type: 3,
+//     hour: _hour,
+//     minute: _minute,
+//     seconds: seconds
+//   }
+//   boxes.push(a);
+// }
 
 function drawRec(number) {
-  //console.dir(number)
   let body = number.body;
   let type = number.type;
-  let c = color(255, 0, 0);
+  let color = '#000000';
+  let x = 80;
+  let y = 40;
+  let fontSize = 60;
+
+  if (type === 1) {
+    color = '#FFFFFF';
+    x = 80;
+    y = 40;
+    fontSize = 60;
+  } else if (type === 2) {
+    color = '#65FDF0';
+    x = 220;
+    y = 100;
+    fontSize = 156;
+  } else if (type === 3) {
+    color = '#1D6FA3';
+    x = 340;
+    y = 160;
+    fontSize = 248;
+  }
+
+  if(showStroke){
+    fill(255);
+    drawVertices(body.vertices);
+    stroke('#FF0000')
+  }else noStroke();
+
   push();
   translate(body.position.x, body.position.y)
   rotate(body.angle);
-
-  if (type === 1) {
-    translate(-40, -20)
-    noFill();
-    showStroke ? stroke(c) : noStroke();
-    rect(0, 0, 80, 40);
-    fill(255);
-    textSize(60);
-    text(number.value, 40, 12);
-  } else if (type === 2) {
-    translate(-105, -50)
-    noFill();
-    showStroke ? stroke(c) : noStroke();
-    rect(0, 0, 210, 100);
-    fill('#65FDF0');
-    textSize(150);
-    text(number.value, 105, 32)
-  } else if (type === 3) {
-    translate(-170, -80)
-    noFill();
-    showStroke ? stroke(c) : noStroke();
-    rect(0, 0, 340, 160);
-    fill('#1D6FA3');
-    textSize(240);
-    text(number.value, 170, 52);
-  }
+  translate(-(x/2), -(y/2));
+  noFill();
+  rect(0, 0, x, y);
+  translate((x/2), (y/2));
+  fill(color);
+  textSize(fontSize);
+  text(number.value, 0, y/2-(y*0.01));
   pop();
 }
 
-function drawBody(body) {
-  if (body.parts && body.parts.length > 1) {
-    for (let p = 1; p < body.parts.length; p++) {
-      drawVertices(body.parts[p].vertices)
-    }
-  } else {
-    drawVertices(body.vertices);
-  }
-}
+// function drawBody(body) {
+//   if (body.parts && body.parts.length > 1) {
+//     for (let p = 1; p < body.parts.length; p++) {
+//       drawVertices(body.parts[p].vertices)
+//     }
+//   } else {
+//     drawVertices(body.vertices);
+//   }
+// }
