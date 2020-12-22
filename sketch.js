@@ -1,6 +1,9 @@
 // Benedikt Groß
 // Example is based on examples from: http://brm.io/matter-js/, https://github.com/shiffman/p5-matter
 
+//var iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream; 
+//var iw = (iOS) ? screen.width : window.innerWidth, ih = (iOS) ? screen.height : window.innerHeight;
+
 const Engine = Matter.Engine;
 const Render = Matter.Render;
 const World = Matter.World;
@@ -9,23 +12,23 @@ const Body = Matter.Body;
 var boxes = []; 
 var blockDrawing = false;
 var inOrientationMode = false;
+let isInDebug = false;
 var _alpha = 0;
 var _beta = 0;
 var _gamma = 0;
+var height = 0;
+var width = 0;
+var ground;
+var leftWall;
+var rightWall;
+var roof;
 
 let engine;
-let height = 0;
-let width = 0;
-let ground;
-let leftWall;
-let rightWall;
-let roof;
 let angle = 0;
 let _frameCount = 0;
 let seconds = -1;
 let _minute = -1;
 let _hour = -1;
-let showStroke = false;
 let font;
 
 Number.prototype.mapRange = function (in_min, in_max, out_min, out_max) {
@@ -41,6 +44,7 @@ function reportWindowSize(e){
     height = window.innerHeight;
     width = window.innerWidth;
     resizeCanvas(width, height);
+    createStatickObjects();
     // TODO : Chanage size on static objects
 }
 
@@ -52,26 +56,10 @@ function setup() {
   // create an engine
   engine = Engine.create();
 
-  // create static objects
-  ground = Bodies.rectangle(width/2, height, width + 10, 10, {
-    isStatic: true,
-    angle: 0
-  });
-  leftWall = Bodies.rectangle(0, height/2, 10, height + 10, {
-    isStatic: true,
-    angle: 0
-  });
-  rightWall = Bodies.rectangle(width, height/2, 10, height + 10, {
-    isStatic: true,
-    angle: 0
-  });
-  roof = Bodies.rectangle(width/2, 0, width + 10, 10, {
-    isStatic: true,
-    angle: 0 
-  });
+  createStatickObjects();
 
   // add all of the bodies to the world
-  World.add(engine.world, [ground, leftWall, rightWall, roof]);
+  //World.add(engine.world, [ground, leftWall, rightWall, roof]);
 
   // set gravity 
   engine.world.gravity.x = 0;
@@ -99,15 +87,29 @@ function draw() {
   // Draw orientation
   if(inOrientationMode){
 
-    // set gravity 
-    engine.world.gravity.x = _gamma.mapRange(90,-90,2,-2);
-    engine.world.gravity.y = _beta.mapRange(90,-90,2,-2);
+    // set gravity
+    if(window.orientation == 0){
+      if(_gamma !== undefined && _gamma !== null) engine.world.gravity.x = _gamma.mapRange(90,-90,2,-2);
+      if(_beta !== undefined && _beta !== null) engine.world.gravity.y = _beta.mapRange(90,-90,2,-2);
+    } 
+    if(window.orientation == 90){
+      if(_gamma !== undefined && _gamma !== null) engine.world.gravity.x = _beta.mapRange(90, -90,2, -2);
+      if(_beta !== undefined && _beta !== null) engine.world.gravity.y = _gamma.mapRange(-90, 90, 2, -2);
+    }
+    if(window.orientation == -90){
+      if(_gamma !== undefined && _gamma !== null) engine.world.gravity.x = _beta.mapRange(-90, 90,2, -2);
+      if(_beta !== undefined && _beta !== null) engine.world.gravity.y = _gamma.mapRange(90, -90, 2, -2);
+    }
 
-    // fill(255);
-    // textAlign(LEFT, BASELINE );
-    // textSize(20);
-    // text(Math.round(_alpha)+","+Math.round(_beta)+","+Math.round(_gamma) +"," + engine.world.gravity.y, 100, 50);
-    // textAlign(CENTER, BASELINE );
+    if(isInDebug){
+    fill(255);
+    textAlign(LEFT, BASELINE );
+    textSize(20);
+    text(Math.round(_alpha)+","+Math.round(_beta + window.orientation)+","+Math.round(_gamma + window.orientation) +"," + engine.world.gravity.y, 100, 50);
+    text(width+","+height, 100, 80);
+    text(window.orientation, 100, 100);
+    textAlign(CENTER, BASELINE );
+    }
   }
 
   if(!blockDrawing){
@@ -131,6 +133,33 @@ function draw() {
   // Update frame count, should be removed 
   // when add and remove of numbers is moved.
   _frameCount++;
+}
+
+function createStatickObjects(){
+  if(ground !== undefined) World.remove(engine.world, ground);
+  if(leftWall !== undefined) World.remove(engine.world, leftWall);
+  if(rightWall !== undefined) World.remove(engine.world, rightWall);
+  if(roof !== undefined) World.remove(engine.world, roof);
+  // create static objects
+  ground = Bodies.rectangle(width/2, height, width + 10, 10, {
+    isStatic: true,
+    angle: 0
+  });
+  leftWall = Bodies.rectangle(0, height/2, 10, height + 10, {
+    isStatic: true,
+    angle: 0
+  });
+  rightWall = Bodies.rectangle(width, height/2, 10, height + 10, {
+    isStatic: true,
+    angle: 0
+  });
+  roof = Bodies.rectangle(width/2, 0, width + 10, 10, {
+    isStatic: true,
+    angle: 0 
+  });
+
+  // add all of the bodies to the world
+  World.add(engine.world, [ground, leftWall, rightWall, roof]);
 }
 
 function reload(){
@@ -246,7 +275,7 @@ function addNumber(_hour, _minute, seconds, type){
   let value = seconds;
   if(type == 2) value = _minute;
   if(type == 3) value = _hour;
-  
+
   let a = {
     body: b,
     value: value,
@@ -363,7 +392,7 @@ function drawRec(number) {
     fontSize = 248;
   }
 
-  if(showStroke){
+  if(isInDebug){
     fill(255);
     drawVertices(body.vertices);
     stroke('#FF0000')
